@@ -1,0 +1,57 @@
+name: Publish Python SDK (geopera)
+
+# Publishes geopera to PyPI on a tag like `v2.0.0`.
+# Uses PyPI Trusted Publishing (OIDC) — no stored token.
+#
+# One-time PyPI setup: pypi.org -> the project -> Publishing -> add a GitHub
+# Actions publisher (repo geo-pera/geopera-python, workflow publish.yml,
+# environment "pypi"). First publish may need the "pending publisher" flow.
+#
+# Before tagging, refresh the spec if the API changed:
+#   GEOPERA_API_URL=https://api.geopera.com ./regen.sh && git commit openapi.json
+# Bump the version (spec info.version flows into the package), then:
+#   git tag vX.Y.Z && git push origin vX.Y.Z
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch: {}
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write       # OIDC for PyPI Trusted Publishing
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build toolchain
+        run: pip install openapi-python-client tomlkit build twine
+
+      - name: Regenerate SDK from the committed spec (+ re-apply metadata/README/LICENSE)
+        run: bash regen.sh
+
+      - name: Build sdist + wheel
+        working-directory: geopera-sdk
+        run: python -m build
+
+      - name: Validate distribution (PyPI readiness)
+        working-directory: geopera-sdk
+        run: twine check dist/*
+
+      - name: Smoke-test the built wheel
+        run: |
+          pip install geopera-sdk/dist/*.whl
+          python -m pytest test_python_sdk_smoke.py -q
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: geopera-sdk/dist/
