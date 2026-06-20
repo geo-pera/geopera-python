@@ -47,7 +47,7 @@ jobs:
 
       - name: Smoke-test the built wheel
         run: |
-          pip install geopera-sdk/dist/*.whl
+          pip install pytest geopera-sdk/dist/*.whl
           python -m pytest test_python_sdk_smoke.py -q
 
       - name: Publish to PyPI
