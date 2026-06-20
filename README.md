@@ -12,9 +12,8 @@ client for the [Geopera](https://geopera.com) geospatial data platform.
 | Path | What it is |
 | --- | --- |
 | `geopera-sdk/` | The generated package (`geopera`). **Generated — do not hand-edit.** |
-| `openapi.json` | The committed, scrubbed, customer-safe OpenAPI snapshot the package is built from. |
-| `regen.sh` | Regenerate `geopera-sdk/` from the spec (scrub + fence + codegen + metadata). |
-| `scrub_spec.py` | Scrubs a raw API dump into the customer-safe public spec, then fences it. |
+| `openapi.json` | The committed OpenAPI spec the package is built from. |
+| `regen.sh` | Regenerate `geopera-sdk/` from the spec (codegen + metadata). |
 | `patch_metadata.py` | Re-applies PyPI metadata + README + LICENSE the generator overwrites. |
 | `opc-config.yaml` | `openapi-python-client` config (package name override). |
 | `README_sdk.md` | The package README (shipped to PyPI). |
@@ -35,27 +34,12 @@ pip install openapi-python-client tomlkit build twine
 
 ## Regenerate the package
 
-Build from the committed spec snapshot (no network):
-
 ```bash
 ./regen.sh
 ```
 
-Refresh the spec from a live backend first, then build (the scrub + fence runs either way,
-so admin/internal operations and internal prose can never reach the public package):
-
-```bash
-GEOPERA_API_URL=https://api.geopera.com ./regen.sh
-```
-
-`regen.sh` will:
-
-1. Obtain the raw spec (committed snapshot, or a live `/openapi.json` dump).
-2. **Scrub + fence** it into `openapi.json` (drops `*.admin.*` / `*_internal` /
-   `diagnostics` ops, prunes leaked model names, strips internal prose, retitles to
-   "Geopera Operations"; aborts if anything internal survives).
-3. Run `openapi-python-client` into `geopera-sdk/`.
-4. Re-apply PyPI metadata + the curated README + LICENSE (`patch_metadata.py`).
+`regen.sh` runs `openapi-python-client` over `openapi.json` into `geopera-sdk/`, then
+re-applies the PyPI metadata + curated README + LICENSE (`patch_metadata.py`).
 
 ## Build + test locally
 
@@ -71,7 +55,7 @@ pip install geopera-sdk/dist/*.whl
 python -m pytest test_python_sdk_smoke.py -q
 
 # optional live half (reaches the real API):
-GEOPERA_API_URL=https://api.geopera.com GEOPERA_API_TOKEN=gpra_... \
+GEOPERA_API_URL=https://api.geopera.com GEOPERA_API_TOKEN=... \
   python -m pytest test_python_sdk_smoke.py -q
 ```
 
@@ -80,9 +64,8 @@ GEOPERA_API_URL=https://api.geopera.com GEOPERA_API_TOKEN=gpra_... \
 Publishing is automated via `.github/workflows/publish.yml` (PyPI Trusted Publishing, no
 stored token). To cut a release:
 
-1. If the API changed, refresh the spec and commit it:
-   `GEOPERA_API_URL=https://api.geopera.com ./regen.sh && git commit openapi.json`
-2. Bump the version (`spec info.version` flows into the package; verify `geopera-sdk/pyproject.toml`).
+1. If the API changed, update `openapi.json` and commit it.
+2. Bump the version (verify `geopera-sdk/pyproject.toml`).
 3. Tag and push: `git tag v2.0.0 && git push origin v2.0.0`.
 
 The workflow regenerates, builds, runs `twine check`, smoke-tests the wheel, and publishes

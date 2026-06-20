@@ -7,8 +7,7 @@ name: Publish Python SDK (geopera)
 # Actions publisher (repo geo-pera/geopera-python, workflow publish.yml,
 # environment "pypi"). First publish may need the "pending publisher" flow.
 #
-# Before tagging, refresh the spec if the API changed:
-#   GEOPERA_API_URL=https://api.geopera.com ./regen.sh && git commit openapi.json
+# Before tagging, if the API changed: update openapi.json and commit it.
 # Bump the version (spec info.version flows into the package), then:
 #   git tag vX.Y.Z && git push origin vX.Y.Z
 
