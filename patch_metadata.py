@@ -64,4 +64,20 @@ PYPROJECT.write_text(tomlkit.dumps(doc))
 shutil.copyfile(HERE / "README_sdk.md", PKG / "README.md")
 shutil.copyfile(HERE / "LICENSE", PKG / "LICENSE")
 
-print(f"patched {PYPROJECT.name}: metadata + README + LICENSE")
+# Hand-written fluent namespaced client (Geopera). The generator overwrites the
+# package every run, so re-copy fluent.py into the package and re-export Geopera
+# from __init__.py. Idempotent.
+PKG_DIR = PKG / "geopera"
+shutil.copyfile(HERE / "fluent.py", PKG_DIR / "fluent.py")
+init_path = PKG_DIR / "__init__.py"
+init = init_path.read_text()
+if "from .fluent import Geopera" not in init:
+    init = init.rstrip() + (
+        "\n\n# Fluent namespaced client (hand-written; re-applied by patch_metadata.py).\n"
+        "from .fluent import Geopera as Geopera  # noqa: E402\n"
+        'if "Geopera" not in __all__:\n'
+        '    __all__ = (*__all__, "Geopera")\n'
+    )
+    init_path.write_text(init)
+
+print(f"patched {PYPROJECT.name}: metadata + README + LICENSE + fluent client (Geopera)")
