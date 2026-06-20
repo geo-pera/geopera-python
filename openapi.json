@@ -3,7 +3,7 @@
  "info": {
   "title": "Geopera Operations",
   "description": "Official API for the Geopera geospatial data platform.",
-  "version": "2.0.0"
+  "version": "2.1.0"
  },
  "paths": {
   "/v1/op/orders.archive.place": {
